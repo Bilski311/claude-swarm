@@ -1,7 +1,7 @@
 {
-  "name": "claude-conductor",
+  "name": "claude-swarm",
   "version": "1.0.0",
-  "description": "Orchestrate multiple Claude Code sessions",
+  "description": "Run your own AI company - orchestrate multiple Claude Code sessions",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -26,8 +26,8 @@
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "appId": "com.claudeconductor.app",
-    "productName": "Claude Conductor",
+    "appId": "com.claudeswarm.app",
+    "productName": "Claude Swarm",
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": "dir"
@@ -35,6 +35,7 @@
     "files": [
       "main.js",
       "index.html",
+      "dashboard.js",
       "renderer.js",
       "node_modules/**/*"
     ]

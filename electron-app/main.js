@@ -7,7 +7,7 @@ const fs = require('fs');
 
 let mainWindow;
 const sessions = new Map(); // id -> { pty, name, directory, role, status }
-const CONFIG_DIR = path.join(os.homedir(), '.claude-conductor');
+const CONFIG_DIR = path.join(os.homedir(), '.claude-swarm');
 const SESSIONS_FILE = path.join(CONFIG_DIR, 'sessions.json');
 
 // Ensure config directory exists
