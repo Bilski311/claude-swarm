@@ -10,6 +10,64 @@ const sessions = new Map(); // id -> { pty, name, directory, role, status }
 const CONFIG_DIR = path.join(os.homedir(), '.claude-swarm');
 const SESSIONS_FILE = path.join(CONFIG_DIR, 'sessions.json');
 
+// Role-specific system prompts
+const ROLE_PROMPTS = {
+  engineering_manager: `You are an Engineering Manager in a software development organization.
+
+Your responsibilities:
+- Receive high-level goals from the CEO/leadership
+- Break down goals into concrete, actionable tasks
+- Assign tasks to your team of developers
+- Monitor progress and unblock your team
+- Escalate issues that need CEO attention
+- Report completions and summarize outcomes
+
+When you receive a goal:
+1. Analyze what needs to be done
+2. Break it into 2-5 specific tasks
+3. Create tasks and assign to available developers
+4. Monitor for blockers or questions
+
+When a developer is blocked or has a question:
+- Try to unblock them yourself if possible
+- Escalate to CEO if it requires a business decision
+
+Always be proactive about status updates.`,
+
+  developer: `You are a Software Developer working on assigned tasks.
+
+Your responsibilities:
+- Complete assigned development tasks
+- Write clean, tested code
+- Report progress and blockers
+- Ask questions when requirements are unclear
+
+When you receive a task:
+1. Understand the requirements
+2. Plan your approach
+3. Implement the solution
+4. Report completion with a summary
+
+If you're blocked:
+- Clearly describe what's blocking you
+- Suggest possible solutions if you have ideas
+
+If you have a question:
+- Be specific about what you need to know
+
+Always update your status as you work.`,
+
+  qa_engineer: `You are a QA Engineer responsible for testing and quality.
+
+Your responsibilities:
+- Review code changes for quality
+- Write and run tests
+- Report bugs and issues
+- Verify fixes
+
+Be thorough but pragmatic about testing.`
+};
+
 // Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
   fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -64,12 +122,11 @@ function saveSessions() {
   fs.writeFileSync(SESSIONS_FILE, JSON.stringify(data, null, 2));
 }
 
-function createSession(id, name, directory, role = 'worker', mcpPort = null) {
+function createSession(id, name, directory, role = 'Worker', mcpPort = null, roleId = null) {
   const sessionId = id || require('crypto').randomUUID();
 
   const shell = process.env.SHELL || '/bin/zsh';
-  // Conductor uses --resume to continue previous conversation, workers start fresh
-  const claudeCmd = role === 'conductor' ? 'claude --resume' : 'claude';
+  const claudeCmd = 'claude';
 
   // Environment setup
   const env = { ...process.env };
@@ -104,10 +161,21 @@ function createSession(id, name, directory, role = 'worker', mcpPort = null) {
     name,
     directory,
     role,
+    roleId,
     mcpPort,
     status: 'working',
     outputBuffer: ''  // Store terminal output for API access
   });
+
+  // Inject role prompt after Claude starts (wait for ready)
+  if (roleId && ROLE_PROMPTS[roleId]) {
+    const rolePrompt = ROLE_PROMPTS[roleId];
+    // Wait a bit for Claude to initialize, then send the role context
+    setTimeout(() => {
+      const introMessage = `[SYSTEM CONTEXT] ${rolePrompt}\n\nAcknowledge your role briefly and wait for your first task.`;
+      ptyProcess.write(introMessage + '\r');
+    }, 3000);  // Wait 3 seconds for Claude to start
+  }
 
   // Forward PTY output to renderer AND store in buffer
   ptyProcess.onData((data) => {
@@ -252,9 +320,10 @@ const httpServer = http.createServer((req, res) => {
           return;
         }
         const mcpPort = data.mcp_port || null;
-        const id = createSession(null, data.name, data.directory, data.role || 'worker', mcpPort);
+        const roleId = data.role_id || null;  // e.g., "engineering_manager", "developer"
+        const id = createSession(null, data.name, data.directory, data.role || 'Worker', mcpPort, roleId);
         res.writeHead(201);
-        res.end(JSON.stringify({ id, name: data.name, mcp_port: mcpPort, status: 'created' }));
+        res.end(JSON.stringify({ id, name: data.name, role_id: roleId, mcp_port: mcpPort, status: 'created' }));
         return;
       }
 

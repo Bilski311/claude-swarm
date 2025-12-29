@@ -57,8 +57,7 @@ document.getElementById('hire-confirm').addEventListener('click', async () => {
     return;
   }
 
-  // Use the existing conductor API to create worker
-  // The Swarm MCP will handle role assignment
+  // Create worker with role-specific system prompt
   try {
     const resp = await fetch('http://127.0.0.1:7422/sessions', {
       method: 'POST',
@@ -66,7 +65,8 @@ document.getElementById('hire-confirm').addEventListener('click', async () => {
       body: JSON.stringify({
         name: `${name} (${role})`,
         directory: directory,
-        role: 'Worker'
+        role: 'Worker',
+        role_id: role  // This triggers the role-specific prompt injection
       })
     });
 
