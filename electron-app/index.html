@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Claude Conductor</title>
+  <title>Claude Swarm</title>
   <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css">
   <style>
     * {
@@ -13,79 +13,429 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #1e1e1e;
-      color: #fff;
+      background: #0d1117;
+      color: #c9d1d9;
       height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
+    /* Toolbar */
     .toolbar {
-      background: #2d2d2d;
+      background: #161b22;
       padding: 12px 16px;
       display: flex;
       align-items: center;
       gap: 16px;
-      border-bottom: 1px solid #404040;
+      border-bottom: 1px solid #30363d;
     }
 
     .toolbar h1 {
       font-size: 16px;
       font-weight: 600;
+      color: #f0f6fc;
     }
 
-    .session-count {
-      color: #888;
-      font-size: 14px;
+    .toolbar h1 span {
+      color: #58a6ff;
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 4px;
+      margin-left: 24px;
+    }
+
+    .view-tab {
+      background: transparent;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .view-tab:hover {
+      background: #21262d;
+      color: #c9d1d9;
+    }
+
+    .view-tab.active {
+      background: #21262d;
+      color: #f0f6fc;
+    }
+
+    .notification-badge {
+      background: #f85149;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 600;
     }
 
     .toolbar-spacer {
       flex: 1;
     }
 
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3fb950;
+    }
+
     .btn {
-      background: #0066cc;
+      background: #238636;
       color: white;
       border: none;
       padding: 8px 16px;
       border-radius: 6px;
       cursor: pointer;
       font-size: 13px;
+      font-weight: 500;
     }
 
     .btn:hover {
-      background: #0077ee;
+      background: #2ea043;
     }
 
-    .layout-picker {
-      display: flex;
-      gap: 4px;
+    .btn-secondary {
+      background: #21262d;
+      border: 1px solid #30363d;
     }
 
-    .layout-btn {
-      background: #404040;
-      border: none;
-      padding: 6px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      color: #888;
+    .btn-secondary:hover {
+      background: #30363d;
     }
 
-    .layout-btn.active {
-      background: #0066cc;
-      color: white;
-    }
-
+    /* Main Content */
     .main-content {
       flex: 1;
       display: flex;
       overflow: hidden;
     }
 
+    /* ========== CEO DASHBOARD ========== */
+    .dashboard {
+      flex: 1;
+      display: none;
+      padding: 24px;
+      overflow-y: auto;
+      background: #0d1117;
+    }
+
+    .dashboard.active {
+      display: block;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .dashboard-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-header h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+
+    .card-header .count {
+      background: #21262d;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .card-body {
+      padding: 16px 20px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+
+    .stat-value.success { color: #3fb950; }
+    .stat-value.warning { color: #d29922; }
+    .stat-value.danger { color: #f85149; }
+    .stat-value.info { color: #58a6ff; }
+
+    /* Notifications */
+    .notification-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .notification-item {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .notification-item:hover {
+      border-color: #58a6ff;
+    }
+
+    .notification-item.blocked {
+      border-left: 3px solid #f85149;
+    }
+
+    .notification-item.question {
+      border-left: 3px solid #d29922;
+    }
+
+    .notification-item.completed {
+      border-left: 3px solid #3fb950;
+    }
+
+    .notification-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .notification-type {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .notification-type.blocked { background: #f8514933; color: #f85149; }
+    .notification-type.question { background: #d2992233; color: #d29922; }
+    .notification-type.completed { background: #3fb95033; color: #3fb950; }
+
+    .notification-time {
+      font-size: 11px;
+      color: #8b949e;
+      margin-left: auto;
+    }
+
+    .notification-title {
+      font-weight: 500;
+      color: #f0f6fc;
+      margin-bottom: 4px;
+    }
+
+    .notification-message {
+      font-size: 13px;
+      color: #8b949e;
+      line-height: 1.4;
+    }
+
+    .notification-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .notification-actions .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Workers List */
+    .worker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .worker-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #21262d;
+      border-radius: 8px;
+    }
+
+    .worker-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #30363d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .worker-info {
+      flex: 1;
+    }
+
+    .worker-name {
+      font-weight: 500;
+      color: #f0f6fc;
+      font-size: 14px;
+    }
+
+    .worker-role {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .worker-status {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .worker-status.idle { background: #21262d; color: #8b949e; }
+    .worker-status.working { background: #3fb95033; color: #3fb950; }
+    .worker-status.blocked { background: #f8514933; color: #f85149; }
+
+    /* Tasks */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #21262d;
+      border-radius: 8px;
+    }
+
+    .task-status-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #30363d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .task-status-icon.in_progress {
+      border-color: #58a6ff;
+      background: #58a6ff33;
+    }
+
+    .task-status-icon.completed {
+      border-color: #3fb950;
+      background: #3fb950;
+      color: #0d1117;
+    }
+
+    .task-status-icon.blocked {
+      border-color: #f85149;
+      background: #f8514933;
+    }
+
+    .task-title {
+      flex: 1;
+      font-size: 13px;
+      color: #c9d1d9;
+    }
+
+    .task-assignee {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #8b949e;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #c9d1d9;
+      margin-bottom: 8px;
+    }
+
+    /* ========== TERMINAL VIEW ========== */
+    .terminal-view {
+      flex: 1;
+      display: none;
+      overflow: hidden;
+    }
+
+    .terminal-view.active {
+      display: flex;
+    }
+
     .sidebar {
       width: 220px;
-      background: #252525;
-      border-right: 1px solid #404040;
+      background: #161b22;
+      border-right: 1px solid #30363d;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -98,8 +448,9 @@
     .sidebar-section h3 {
       font-size: 11px;
       text-transform: uppercase;
-      color: #888;
+      color: #8b949e;
       margin-bottom: 8px;
+      letter-spacing: 0.5px;
     }
 
     .session-item {
@@ -113,11 +464,11 @@
     }
 
     .session-item:hover {
-      background: #333;
+      background: #21262d;
     }
 
     .session-item.active {
-      background: #0066cc33;
+      background: #388bfd33;
     }
 
     .session-icon {
@@ -135,26 +486,27 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: #c9d1d9;
     }
 
     .session-status {
       font-size: 11px;
-      color: #888;
+      color: #8b949e;
     }
 
-    .status-dot {
+    .session-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #888;
+      background: #8b949e;
     }
 
-    .status-dot.working {
-      background: #4caf50;
+    .session-dot.working {
+      background: #3fb950;
     }
 
-    .status-dot.disconnected {
-      background: #f44336;
+    .session-dot.disconnected {
+      background: #f85149;
     }
 
     .add-worker {
@@ -162,13 +514,13 @@
       align-items: center;
       gap: 8px;
       padding: 8px 10px;
-      color: #0088ff;
+      color: #58a6ff;
       cursor: pointer;
       font-size: 13px;
     }
 
     .add-worker:hover {
-      background: #333;
+      background: #21262d;
       border-radius: 6px;
     }
 
@@ -180,23 +532,14 @@
       overflow: auto;
     }
 
-    .terminal-grid.cols-1 {
-      grid-template-columns: 1fr;
-    }
-
-    .terminal-grid.cols-2 {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .terminal-grid.cols-4 {
-      grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-    }
+    .terminal-grid.cols-1 { grid-template-columns: 1fr; }
+    .terminal-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .terminal-grid.cols-4 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
 
     .terminal-pane {
-      background: #1a1a1a;
+      background: #0d1117;
       border-radius: 8px;
-      border: 1px solid #404040;
+      border: 1px solid #30363d;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -204,48 +547,23 @@
     }
 
     .terminal-pane.active {
-      border-color: #0066cc;
+      border-color: #58a6ff;
     }
 
     .terminal-header {
-      background: #2d2d2d;
+      background: #161b22;
       padding: 8px 12px;
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #404040;
+      border-bottom: 1px solid #30363d;
     }
 
-    .terminal-header .icon {
-      font-size: 14px;
-    }
-
-    .terminal-header .name {
-      font-size: 13px;
-      font-weight: 500;
-      flex: 1;
-    }
-
-    .terminal-header .status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: #888;
-    }
-
-    .terminal-header .close-btn {
-      background: none;
-      border: none;
-      color: #888;
-      cursor: pointer;
-      padding: 4px;
-      font-size: 16px;
-    }
-
-    .terminal-header .close-btn:hover {
-      color: #f44336;
-    }
+    .terminal-header .icon { font-size: 14px; }
+    .terminal-header .name { font-size: 13px; font-weight: 500; flex: 1; color: #c9d1d9; }
+    .terminal-header .status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; }
+    .terminal-header .close-btn { background: none; border: none; color: #8b949e; cursor: pointer; padding: 4px; font-size: 16px; }
+    .terminal-header .close-btn:hover { color: #f85149; }
 
     .terminal-container {
       flex: 1;
@@ -253,6 +571,29 @@
       overflow: hidden;
     }
 
+    /* Layout buttons */
+    .layout-picker {
+      display: flex;
+      gap: 4px;
+    }
+
+    .layout-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #8b949e;
+      font-size: 12px;
+    }
+
+    .layout-btn.active {
+      background: #388bfd33;
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+
+    /* Modal */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -271,89 +612,244 @@
     }
 
     .modal {
-      background: #2d2d2d;
+      background: #161b22;
+      border: 1px solid #30363d;
       border-radius: 12px;
       padding: 24px;
-      width: 400px;
+      width: 450px;
     }
 
     .modal h2 {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       font-size: 18px;
+      color: #f0f6fc;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
     }
 
     .modal label {
       display: block;
       margin-bottom: 6px;
       font-size: 13px;
-      color: #888;
+      color: #8b949e;
     }
 
-    .modal input {
+    .modal input, .modal select, .modal textarea {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #404040;
+      padding: 10px 12px;
+      border: 1px solid #30363d;
       border-radius: 6px;
-      background: #1e1e1e;
-      color: white;
-      margin-bottom: 16px;
+      background: #0d1117;
+      color: #c9d1d9;
       font-size: 14px;
+    }
+
+    .modal input:focus, .modal select:focus, .modal textarea:focus {
+      outline: none;
+      border-color: #58a6ff;
     }
 
     .modal-buttons {
       display: flex;
       gap: 8px;
       justify-content: flex-end;
+      margin-top: 24px;
     }
 
-    .btn-secondary {
-      background: #404040;
-    }
-
-    .btn-secondary:hover {
-      background: #505050;
+    /* Response Modal */
+    .response-input {
+      min-height: 100px;
+      resize: vertical;
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <h1>Claude Conductor</h1>
-    <span class="session-count" id="session-count">0 Sessions</span>
-    <div class="toolbar-spacer"></div>
-    <div class="layout-picker">
-      <button class="layout-btn" data-cols="1">1</button>
-      <button class="layout-btn active" data-cols="2">2</button>
-      <button class="layout-btn" data-cols="4">4</button>
+    <h1>Claude <span>Swarm</span></h1>
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="dashboard">
+        📊 Dashboard
+        <span class="notification-badge" id="notification-count" style="display:none">0</span>
+      </button>
+      <button class="view-tab" data-view="terminals">
+        💻 Terminals
+      </button>
     </div>
+    <div class="toolbar-spacer"></div>
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span id="session-count">0 workers</span>
+    </div>
+    <button class="btn" id="hire-btn">+ Hire Worker</button>
   </div>
 
   <div class="main-content">
-    <div class="sidebar">
-      <div class="sidebar-section">
-        <h3>Conductor</h3>
-        <div id="conductor-list"></div>
+    <!-- CEO Dashboard View -->
+    <div class="dashboard active" id="dashboard-view">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Workers</div>
+          <div class="stat-value info" id="stat-workers">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active Tasks</div>
+          <div class="stat-value success" id="stat-active">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Blocked</div>
+          <div class="stat-value danger" id="stat-blocked">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Needs Attention</div>
+          <div class="stat-value warning" id="stat-notifications">0</div>
+        </div>
       </div>
-      <div class="sidebar-section">
-        <h3>Workers</h3>
-        <div id="worker-list"></div>
-        <div class="add-worker" id="add-worker-btn">
-          <span>+</span>
-          <span>Add Worker</span>
+
+      <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div>
+          <!-- Notifications -->
+          <div class="dashboard-card" style="margin-bottom: 24px;">
+            <div class="card-header">
+              <h2>🔔 Notifications</h2>
+              <span class="count" id="notifications-count">0</span>
+            </div>
+            <div class="card-body">
+              <div class="notification-list" id="notification-list">
+                <div class="empty-state">
+                  <div class="empty-state-icon">✅</div>
+                  <div class="empty-state-title">All clear!</div>
+                  <div>No notifications need your attention</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Tasks -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h2>📋 Active Tasks</h2>
+              <span class="count" id="tasks-count">0</span>
+            </div>
+            <div class="card-body">
+              <div class="task-list" id="task-list">
+                <div class="empty-state">
+                  <div class="empty-state-icon">📝</div>
+                  <div class="empty-state-title">No active tasks</div>
+                  <div>Submit a goal to get started</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div>
+          <!-- Workers -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h2>👥 Team</h2>
+              <span class="count" id="workers-count">0</span>
+            </div>
+            <div class="card-body">
+              <div class="worker-list" id="worker-list-dashboard">
+                <div class="empty-state">
+                  <div class="empty-state-icon">👤</div>
+                  <div class="empty-state-title">No workers yet</div>
+                  <div>Hire your first worker to begin</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="terminal-grid cols-2" id="terminal-grid"></div>
+    <!-- Terminal View -->
+    <div class="terminal-view" id="terminal-view">
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <h3>Conductor</h3>
+          <div id="conductor-list"></div>
+        </div>
+        <div class="sidebar-section">
+          <h3>Workers</h3>
+          <div id="worker-list"></div>
+          <div class="add-worker" id="add-worker-btn">
+            <span>+</span>
+            <span>Add Worker</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="terminal-grid cols-2" id="terminal-grid">
+        <div class="layout-picker" style="position:absolute; top:60px; right:16px; z-index:10;">
+          <button class="layout-btn" data-cols="1">1</button>
+          <button class="layout-btn active" data-cols="2">2</button>
+          <button class="layout-btn" data-cols="4">4</button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- New Session Modal -->
+  <!-- Hire Worker Modal -->
+  <div class="modal-overlay hidden" id="hire-modal">
+    <div class="modal">
+      <h2>Hire New Worker</h2>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="hire-role">
+          <option value="engineering_manager">Engineering Manager</option>
+          <option value="developer">Developer</option>
+          <option value="qa_engineer">QA Engineer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="hire-name" placeholder="e.g., Alice">
+      </div>
+      <div class="form-group">
+        <label>Working Directory</label>
+        <input type="text" id="hire-dir" placeholder="/path/to/project">
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" id="hire-cancel">Cancel</button>
+        <button class="btn" id="hire-confirm">Hire</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Respond Modal -->
+  <div class="modal-overlay hidden" id="respond-modal">
+    <div class="modal">
+      <h2 id="respond-title">Respond</h2>
+      <p id="respond-context" style="color:#8b949e; margin-bottom:16px; font-size:13px;"></p>
+      <div class="form-group">
+        <label>Your Response</label>
+        <textarea class="response-input" id="respond-input" placeholder="Type your response..."></textarea>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" id="respond-cancel">Cancel</button>
+        <button class="btn" id="respond-send">Send Response</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legacy Modal for Add Worker -->
   <div class="modal-overlay hidden" id="modal">
     <div class="modal">
       <h2>New Worker Session</h2>
-      <label>Name</label>
-      <input type="text" id="session-name" placeholder="e.g., my-project">
-      <label>Directory</label>
-      <input type="text" id="session-dir" placeholder="/path/to/project">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="session-name" placeholder="e.g., my-project">
+      </div>
+      <div class="form-group">
+        <label>Directory</label>
+        <input type="text" id="session-dir" placeholder="/path/to/project">
+      </div>
       <div class="modal-buttons">
         <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
         <button class="btn" id="modal-create">Create</button>
@@ -362,5 +858,6 @@
   </div>
 
   <script src="renderer.js"></script>
+  <script src="dashboard.js"></script>
 </body>
 </html>
