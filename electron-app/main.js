@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const http = require('http');
 const pty = require('node-pty');
@@ -23,7 +23,7 @@ function createWindow() {
       nodeIntegration: true,
       contextIsolation: false
     },
-    title: 'Claude Conductor'
+    title: 'Claude Swarm'
   });
 
   mainWindow.loadFile('index.html');
@@ -37,28 +37,18 @@ function loadSessions() {
     if (fs.existsSync(SESSIONS_FILE)) {
       const data = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
       mainWindow.webContents.once('did-finish-load', () => {
-        // Restore all saved sessions - conductor first, then workers
-        const conductor = data.find(s => s.role === 'conductor');
-        const workers = data.filter(s => s.role === 'worker');
-
-        if (conductor) {
-          createSession(conductor.id, conductor.name, conductor.directory, 'conductor');
-        } else {
-          createSession(null, 'Conductor', process.cwd(), 'conductor');
-        }
+        // Restore saved worker sessions
+        const workers = data.filter(s => s.role === 'Worker');
 
         // Restore workers with slight delays to avoid overwhelming
         workers.forEach((worker, index) => {
           setTimeout(() => {
-            createSession(worker.id, worker.name, worker.directory, 'worker');
-          }, (index + 1) * 500);
+            createSession(worker.id, worker.name, worker.directory, worker.role, worker.mcpPort);
+          }, index * 500);
         });
       });
-    } else {
-      mainWindow.webContents.once('did-finish-load', () => {
-        createSession(null, 'Conductor', process.cwd(), 'conductor');
-      });
     }
+    // No auto-created sessions - CEO hires workers via Dashboard or MCP tools
   } catch (e) {
     console.error('Failed to load sessions:', e);
   }
@@ -213,6 +203,18 @@ ipcMain.on('create-session', (event, { name, directory, role }) => {
 
 ipcMain.on('delete-session', (event, { id }) => {
   deleteSession(id);
+});
+
+// Directory picker dialog
+ipcMain.handle('show-directory-picker', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select Working Directory'
+  });
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
 });
 
 // HTTP API for MCP communication (port 7422)

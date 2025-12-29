@@ -1,5 +1,6 @@
 /**
  * CEO Dashboard - Real-time view of your AI organization
+ * Note: ipcRenderer is available from renderer.js which loads first
  */
 
 const SWARM_API = 'http://127.0.0.1:7423';  // Swarm state API (different from conductor)
@@ -37,6 +38,13 @@ document.getElementById('hire-btn').addEventListener('click', () => {
 
 document.getElementById('hire-cancel').addEventListener('click', () => {
   document.getElementById('hire-modal').classList.add('hidden');
+});
+
+document.getElementById('hire-browse').addEventListener('click', async () => {
+  const path = await ipcRenderer.invoke('show-directory-picker');
+  if (path) {
+    document.getElementById('hire-dir').value = path;
+  }
 });
 
 document.getElementById('hire-confirm').addEventListener('click', async () => {

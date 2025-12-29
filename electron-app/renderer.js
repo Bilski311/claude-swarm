@@ -9,7 +9,6 @@ let gridCols = 2;
 
 // DOM elements
 const terminalGrid = document.getElementById('terminal-grid');
-const conductorList = document.getElementById('conductor-list');
 const workerList = document.getElementById('worker-list');
 const sessionCount = document.getElementById('session-count');
 const modal = document.getElementById('modal');
@@ -27,13 +26,13 @@ function createTerminalPane(id, name, role) {
   pane.id = `pane-${id}`;
   pane.innerHTML = `
     <div class="terminal-header">
-      <span class="icon">${role === 'conductor' ? '🏠' : '⚡'}</span>
+      <span class="icon">⚡</span>
       <span class="name">${name}</span>
       <span class="status">
         <span class="status-dot working"></span>
         <span>Working</span>
       </span>
-      ${role !== 'conductor' ? '<button class="close-btn">&times;</button>' : ''}
+      <button class="close-btn">&times;</button>
     </div>
     <div class="terminal-container" id="term-${id}"></div>
   `;
@@ -161,7 +160,6 @@ function setActiveSession(id) {
 
 // Update sidebar
 function updateSidebar() {
-  conductorList.innerHTML = '';
   workerList.innerHTML = '';
 
   for (const [id, session] of sessions) {
@@ -169,7 +167,7 @@ function updateSidebar() {
     item.className = `session-item ${id === activeSessionId ? 'active' : ''}`;
     item.dataset.id = id;
     item.innerHTML = `
-      <span class="session-icon">${session.role === 'conductor' ? '🏠' : '⚡'}</span>
+      <span class="session-icon">⚡</span>
       <div class="session-info">
         <div class="session-name">${session.name}</div>
         <div class="session-status">${session.status}</div>
@@ -177,12 +175,7 @@ function updateSidebar() {
       <span class="status-dot ${session.status}"></span>
     `;
     item.addEventListener('click', () => setActiveSession(id));
-
-    if (session.role === 'conductor') {
-      conductorList.appendChild(item);
-    } else {
-      workerList.appendChild(item);
-    }
+    workerList.appendChild(item);
   }
 }
 

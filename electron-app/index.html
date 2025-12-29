@@ -629,6 +629,20 @@
       margin-bottom: 16px;
     }
 
+    .input-with-button {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-with-button input {
+      flex: 1;
+    }
+
+    .input-with-button button {
+      flex-shrink: 0;
+      padding: 10px 16px;
+    }
+
     .modal label {
       display: block;
       margin-bottom: 6px;
@@ -772,10 +786,6 @@
     <div class="terminal-view" id="terminal-view">
       <div class="sidebar">
         <div class="sidebar-section">
-          <h3>Conductor</h3>
-          <div id="conductor-list"></div>
-        </div>
-        <div class="sidebar-section">
           <h3>Workers</h3>
           <div id="worker-list"></div>
           <div class="add-worker" id="add-worker-btn">
@@ -813,7 +823,10 @@
       </div>
       <div class="form-group">
         <label>Working Directory</label>
-        <input type="text" id="hire-dir" placeholder="/path/to/project">
+        <div class="input-with-button">
+          <input type="text" id="hire-dir" placeholder="/path/to/project" readonly>
+          <button class="btn btn-secondary" id="hire-browse">Browse</button>
+        </div>
       </div>
       <div class="modal-buttons">
         <button class="btn btn-secondary" id="hire-cancel">Cancel</button>
