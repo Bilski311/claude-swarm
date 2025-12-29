@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Claude Conductor</title>
+  <link rel="stylesheet" href="node_modules/@xterm/xterm/css/xterm.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e1e;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      background: #2d2d2d;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #404040;
+    }
+
+    .toolbar h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .session-count {
+      color: #888;
+      font-size: 14px;
+    }
+
+    .toolbar-spacer {
+      flex: 1;
+    }
+
+    .btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn:hover {
+      background: #0077ee;
+    }
+
+    .layout-picker {
+      display: flex;
+      gap: 4px;
+    }
+
+    .layout-btn {
+      background: #404040;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #888;
+    }
+
+    .layout-btn.active {
+      background: #0066cc;
+      color: white;
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: #252525;
+      border-right: 1px solid #404040;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      padding: 12px;
+    }
+
+    .sidebar-section h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .session-item {
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .session-item:hover {
+      background: #333;
+    }
+
+    .session-item.active {
+      background: #0066cc33;
+    }
+
+    .session-icon {
+      font-size: 14px;
+    }
+
+    .session-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .session-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-status {
+      font-size: 11px;
+      color: #888;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #888;
+    }
+
+    .status-dot.working {
+      background: #4caf50;
+    }
+
+    .status-dot.disconnected {
+      background: #f44336;
+    }
+
+    .add-worker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      color: #0088ff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .add-worker:hover {
+      background: #333;
+      border-radius: 6px;
+    }
+
+    .terminal-grid {
+      flex: 1;
+      display: grid;
+      gap: 8px;
+      padding: 8px;
+      overflow: auto;
+    }
+
+    .terminal-grid.cols-1 {
+      grid-template-columns: 1fr;
+    }
+
+    .terminal-grid.cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .terminal-grid.cols-4 {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+    }
+
+    .terminal-pane {
+      background: #1a1a1a;
+      border-radius: 8px;
+      border: 1px solid #404040;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 200px;
+    }
+
+    .terminal-pane.active {
+      border-color: #0066cc;
+    }
+
+    .terminal-header {
+      background: #2d2d2d;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #404040;
+    }
+
+    .terminal-header .icon {
+      font-size: 14px;
+    }
+
+    .terminal-header .name {
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .terminal-header .status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .terminal-header .close-btn {
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 16px;
+    }
+
+    .terminal-header .close-btn:hover {
+      color: #f44336;
+    }
+
+    .terminal-container {
+      flex: 1;
+      padding: 8px;
+      overflow: hidden;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      background: #2d2d2d;
+      border-radius: 12px;
+      padding: 24px;
+      width: 400px;
+    }
+
+    .modal h2 {
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .modal label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #404040;
+      border-radius: 6px;
+      background: #1e1e1e;
+      color: white;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .btn-secondary {
+      background: #404040;
+    }
+
+    .btn-secondary:hover {
+      background: #505050;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Claude Conductor</h1>
+    <span class="session-count" id="session-count">0 Sessions</span>
+    <div class="toolbar-spacer"></div>
+    <div class="layout-picker">
+      <button class="layout-btn" data-cols="1">1</button>
+      <button class="layout-btn active" data-cols="2">2</button>
+      <button class="layout-btn" data-cols="4">4</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <h3>Conductor</h3>
+        <div id="conductor-list"></div>
+      </div>
+      <div class="sidebar-section">
+        <h3>Workers</h3>
+        <div id="worker-list"></div>
+        <div class="add-worker" id="add-worker-btn">
+          <span>+</span>
+          <span>Add Worker</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="terminal-grid cols-2" id="terminal-grid"></div>
+  </div>
+
+  <!-- New Session Modal -->
+  <div class="modal-overlay hidden" id="modal">
+    <div class="modal">
+      <h2>New Worker Session</h2>
+      <label>Name</label>
+      <input type="text" id="session-name" placeholder="e.g., my-project">
+      <label>Directory</label>
+      <input type="text" id="session-dir" placeholder="/path/to/project">
+      <div class="modal-buttons">
+        <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+        <button class="btn" id="modal-create">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

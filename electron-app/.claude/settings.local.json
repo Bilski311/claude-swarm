@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__conductor__list_workers",
+      "mcp__conductor__create_worker",
+      "mcp__conductor__send_to_worker",
+      "mcp__conductor__get_worker_output",
+      "mcp__conductor__get_all_outputs"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "unrealMCP",
+    "meshy-ai",
+    "conductor"
+  ]
+}

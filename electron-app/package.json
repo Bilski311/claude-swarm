@@ -1,0 +1,42 @@
+{
+  "name": "claude-conductor",
+  "version": "1.0.0",
+  "description": "Orchestrate multiple Claude Code sessions",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "node test/send-enter.test.js && node test/completion-detection.test.js",
+    "test:integration": "node test/output-api.test.js",
+    "test:all": "npm test && npm run test:integration",
+    "build": "electron-builder --mac --dir",
+    "dist": "electron-builder --mac"
+  },
+  "keywords": [],
+  "author": "Dominik Bilski",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0"
+  },
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.claudeconductor.app",
+    "productName": "Claude Conductor",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": "dir"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "renderer.js",
+      "node_modules/**/*"
+    ]
+  }
+}
